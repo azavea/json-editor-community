@@ -21,11 +21,7 @@ JSONEditor.AbstractTheme = Class.extend({
   },
   getModal: function() {
     var el = document.createElement('div');
-    el.style.backgroundColor = 'white';
-    el.style.border = '1px solid black';
-    el.style.boxShadow = '3px 3px black';
-    el.style.position = 'absolute';
-    el.style.zIndex = '10';
+    el.className = 'jse-modal';
     el.style.display = 'none';
     return el;
   },
@@ -35,7 +31,7 @@ JSONEditor.AbstractTheme = Class.extend({
   },
   getGridRow: function() {
     var el = document.createElement('div');
-    el.className = 'row';
+    el.className = 'jse-row';
     return el;
   },
   getGridColumn: function() {
@@ -52,16 +48,16 @@ JSONEditor.AbstractTheme = Class.extend({
     return el;
   },
   disableHeader: function(header) {
-    header.style.color = '#ccc';
+    header.className = 'jse-disableHeader';
   },
   disableLabel: function(label) {
-    label.style.color = '#ccc';
+    label.className = 'jse-disableLabel';
   },
   enableHeader: function(header) {
-    header.style.color = '';
+    header.className = '';
   },
   enableLabel: function(label) {
-    label.style.color = '';
+    label.className = '';
   },
   getInfoButton: function(text) {
     var icon = document.createElement('span');
@@ -119,22 +115,20 @@ JSONEditor.AbstractTheme = Class.extend({
   },
   getCheckbox: function() {
     var el = this.getFormInputField('checkbox');
-    el.style.display = 'inline-block';
-    el.style.width = 'auto';
+    el.className = 'jse-Checkbox';
     return el;
   },
   getMultiCheckboxHolder: function(controls,label,description) {
     var el = document.createElement('div');
 
     if(label) {
-      label.style.display = 'block';
+      el.className = 'jse-MultiCheckboxLabel';
       el.appendChild(label);
     }
 
     for(var i in controls) {
       if(!controls.hasOwnProperty(i)) continue;
-      controls[i].style.display = 'inline-block';
-      controls[i].style.marginRight = '20px';
+      controls[i].className = 'jse-MultiCheckboxControl';
       el.appendChild(controls[i]);
     }
 
@@ -149,15 +143,7 @@ JSONEditor.AbstractTheme = Class.extend({
   },
   getSwitcher: function(options) {
     var switcher = this.getSelectInput(options);
-    switcher.style.backgroundColor = 'transparent';
-    switcher.style.display = 'inline-block';
-    switcher.style.fontStyle = 'italic';
-    switcher.style.fontWeight = 'normal';
-    switcher.style.height = 'auto';
-    switcher.style.marginBottom = 0;
-    switcher.style.marginLeft = '5px';
-    switcher.style.padding = '0 0 0 3px';
-    switcher.style.width = 'auto';
+    switcher.className = 'jse-Switcher';
     return switcher;
   },
   getSwitcherOptions: function(switcher) {
@@ -178,10 +164,7 @@ JSONEditor.AbstractTheme = Class.extend({
   },
   getTextareaInput: function() {
     var el = document.createElement('textarea');
-    el.style = el.style || {};
-    el.style.width = '100%';
-    el.style.height = '300px';
-    el.style.boxSizing = 'border-box';
+    el.className = 'jse-TextareaInput';
     return el;
   },
   getRangeInput: function(min,max,step) {
@@ -217,10 +200,7 @@ JSONEditor.AbstractTheme = Class.extend({
   },
   getIndentedPanel: function() {
     var el = document.createElement('div');
-    el.style = el.style || {};
-    el.style.paddingLeft = '10px';
-    el.style.marginLeft = '10px';
-    el.style.borderLeft = '1px solid #ccc';
+    el.className = 'jse-IndentedPanel';
     return el;
   },
   getTopIndentedPanel: function() {
@@ -353,6 +333,7 @@ JSONEditor.AbstractTheme = Class.extend({
       fontWeight: 'bold',
       cursor: 'pointer'
     });
+    el.className = 'jse-Tab';
     return el;
   },
   getTopTab: function(span, tabId) {
@@ -393,6 +374,8 @@ JSONEditor.AbstractTheme = Class.extend({
       opacity: 1,
       background: 'white'
     });
+    row.tab.classList.add("TabActive");
+    row.tab.classList.remove("TabInActive");
     row.container.style.display = '';
   },
   markTabInactive: function(row) {
@@ -400,6 +383,8 @@ JSONEditor.AbstractTheme = Class.extend({
       opacity:0.5,
       background: ''
     });
+    row.tab.classList.remove("TabActive");
+    row.tab.classList.add("TabInActive");
     row.container.style.display = 'none';
   },
   addTab: function(holder, tab) {
@@ -410,7 +395,7 @@ JSONEditor.AbstractTheme = Class.extend({
   },
   getBlockLink: function() {
     var link = document.createElement('a');
-    link.style.display = 'block';
+    link.className = 'jse-BlockLink';
     return link;
   },
   getBlockLinkHolder: function() {
@@ -423,7 +408,7 @@ JSONEditor.AbstractTheme = Class.extend({
   },
   createMediaLink: function(holder,link,media) {
     holder.appendChild(link);
-    media.style.width='100%';
+    media.className = 'jse-Media';
     holder.appendChild(media);
   },
   createImageLink: function(holder,link,image) {
