@@ -449,7 +449,7 @@ JSONEditor.AbstractEditor = Class.extend({
     if (typeof this.schema["enum"] !== 'undefined') {
       // default to empty option for non-required selects
       if (!this.isRequired()) {
-        return '';
+        return undefined;
       }
       return this.schema["enum"][0];
     }
