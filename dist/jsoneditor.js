@@ -858,6 +858,12 @@ JSONEditor.Validator = Class.extend({
       for(i=0; i<schema["enum"].length; i++) {
         if(stringified === JSON.stringify(schema["enum"][i])) valid = true;
       }
+
+      // allow empty values for non-required enum
+      if (!valid && !schema.required && !stringified) {
+        valid = true;
+      }
+
       if(!valid) {
         errors.push({
           path: path,
@@ -1738,7 +1744,7 @@ JSONEditor.AbstractEditor = Class.extend({
     if(this.schema["enum"]) {
       // default to empty option for non-required selects
       if (!this.isRequired()) {
-        return '';
+        return undefined;
       }
       return this.schema["enum"][0];
     }
@@ -4868,7 +4874,7 @@ JSONEditor.defaults.editors.select = JSONEditor.AbstractEditor.extend({
       if(!this.isRequired()){
         self.enum_display.unshift(' ');
         self.enum_options.unshift('undefined');
-        self.enum_values.unshift('');
+        self.enum_values.unshift(undefined);
       }
 
     }
@@ -4881,7 +4887,7 @@ JSONEditor.defaults.editors.select = JSONEditor.AbstractEditor.extend({
       if(!this.isRequired()){
         self.enum_display.unshift(' ');
         self.enum_options.unshift('undefined');
-        self.enum_values.unshift('');
+        self.enum_values.unshift(undefined);
       }
 
     }
@@ -5111,7 +5117,7 @@ JSONEditor.defaults.editors.select = JSONEditor.AbstractEditor.extend({
         this.input.value = prev_value;
         this.value = prev_value;
       } else if (!this.isRequired()) {
-        this.value = ''; // default to blank for non-required fields
+        this.value = undefined; // default to blank for non-required fields
         this.input.value = 'undefined';
       }
       // Otherwise, set the value to the first select option
