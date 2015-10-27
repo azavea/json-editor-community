@@ -82,7 +82,7 @@ JSONEditor.defaults.editors.select = JSONEditor.AbstractEditor.extend({
       if(!this.isRequired()){
         self.enum_display.unshift(' ');
         self.enum_options.unshift('undefined');
-        self.enum_values.unshift(undefined);
+        self.enum_values.unshift('');
       }
 
     }
@@ -95,7 +95,7 @@ JSONEditor.defaults.editors.select = JSONEditor.AbstractEditor.extend({
       if(!this.isRequired()){
         self.enum_display.unshift(' ');
         self.enum_options.unshift('undefined');
-        self.enum_values.unshift(undefined);
+        self.enum_values.unshift('');
       }
 
     }
@@ -184,13 +184,14 @@ JSONEditor.defaults.editors.select = JSONEditor.AbstractEditor.extend({
 
     this.control = this.theme.getFormControl(this.label, this.input, this.description, this.infoButton);
     this.container.appendChild(this.control);
-
     this.value = this.enum_values[0];
   },
   onInputChange: function() {
     var val = this.typecast(this.input.value);
 
     var new_val;
+
+
     // Invalid option, use first option instead
     if(this.enum_values.indexOf(val) === -1) {
       new_val = this.enum_values[0];
@@ -340,6 +341,9 @@ JSONEditor.defaults.editors.select = JSONEditor.AbstractEditor.extend({
       if(select_options.indexOf(prev_value) !== -1) {
         this.input.value = prev_value;
         this.value = prev_value;
+      } else if (!this.isRequired()) {
+        this.value = ''; // default to blank for non-required fields
+        this.input.value = 'undefined';
       }
       // Otherwise, set the value to the first select option
       else {
