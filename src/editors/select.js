@@ -323,7 +323,7 @@ JSONEditor.defaults.editors.select = JSONEditor.AbstractEditor.extend({
       var prev_value = this.value;
 
       // Add an empty option for non-required dynamic select boxes
-      if(!this.isRequired()){
+      if(!this.isRequired()) {
         select_options.unshift(undefined);
         select_titles.unshift(' ');
       }
