@@ -329,6 +329,11 @@ JSONEditor.defaults.editors.table = JSONEditor.defaults.editors.array.extend({
       self.rows[i].delete_button.addEventListener('click',function(e) {
         e.preventDefault();
         e.stopPropagation();
+
+        if (!self.askConfirmation()) {
+          return false;
+        }
+
         var i = this.getAttribute('data-i')*1;
 
         var value = self.getValue();
@@ -402,12 +407,12 @@ JSONEditor.defaults.editors.table = JSONEditor.defaults.editors.array.extend({
         if(self.collapsed) {
           self.collapsed = false;
           self.panel.style.display = '';
-          self.setButtonText(this,'','collapse',this.translate('button_collapse'));
+          self.setButtonText(this,'','collapse',self.translate('button_collapse'));
         }
         else {
           self.collapsed = true;
           self.panel.style.display = 'none';
-          self.setButtonText(this,'','expand',this.translate('button_expand'));
+          self.setButtonText(this,'','expand',self.translate('button_expand'));
         }
       });
 
@@ -443,6 +448,10 @@ JSONEditor.defaults.editors.table = JSONEditor.defaults.editors.array.extend({
       e.preventDefault();
       e.stopPropagation();
 
+      if (!self.askConfirmation()) {
+        return false;
+      }
+
       var rows = self.getValue();
       rows.pop();
       self.setValue(rows);
@@ -454,6 +463,10 @@ JSONEditor.defaults.editors.table = JSONEditor.defaults.editors.array.extend({
     this.remove_all_rows_button.addEventListener('click',function(e) {
       e.preventDefault();
       e.stopPropagation();
+
+      if (!self.askConfirmation()) {
+        return false;
+      }
 
       self.setValue([]);
       self.onChange(true);

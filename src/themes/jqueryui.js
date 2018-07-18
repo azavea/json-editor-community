@@ -29,11 +29,11 @@ JSONEditor.defaults.themes.jqueryui = JSONEditor.AbstractTheme.extend({
     el.style.display = 'inline-block';
     return el;
   },
-  getFormControl: function(label, input, description) {
-    var el = this._super(label,input,description);
+  getFormControl: function(label, input, description, infoText) {
+    var el = this._super(label,input,description, infoText);
     if(input.type === 'checkbox') {
       el.style.lineHeight = '25px';
-      
+
       el.style.padding = '3px 0';
     }
     else {
@@ -89,7 +89,7 @@ JSONEditor.defaults.themes.jqueryui = JSONEditor.AbstractTheme.extend({
     button.appendChild(el);
 
     button.setAttribute('title',title);
-    
+
     return button;
   },
   setButtonText: function(button,text, icon, title) {
@@ -130,9 +130,17 @@ JSONEditor.defaults.themes.jqueryui = JSONEditor.AbstractTheme.extend({
   afterInputReady: function(input) {
     if(input.controls) return;
     input.controls = this.closest(input,'.form-control');
+    if (this.queuedInputErrorText) {
+        var text = this.queuedInputErrorText;
+        delete this.queuedInputErrorText;
+        this.addInputError(input,text);
+    }
   },
   addInputError: function(input,text) {
-    if(!input.controls) return;
+    if(!input.controls) {
+        this.queuedInputErrorText = text;
+        return;
+    }
     if(!input.errmsg) {
       input.errmsg = document.createElement('div');
       input.errmsg.className = 'ui-state-error';
@@ -145,13 +153,18 @@ JSONEditor.defaults.themes.jqueryui = JSONEditor.AbstractTheme.extend({
     input.errmsg.textContent = text;
   },
   removeInputError: function(input) {
+    if(!input.controls) {
+        delete this.queuedInputErrorText;
+    }
     if(!input.errmsg) return;
     input.errmsg.style.display = 'none';
   },
-  markTabActive: function(tab) {
-    tab.className = tab.className.replace(/\s*ui-widget-header/g,'')+' ui-state-active';
+  markTabActive: function(row) {
+    row.tab.className = row.tab.className.replace(/\s?ui-widget-header/g,'').replace(/\s?ui-state-active/g,'')+' ui-state-active';
+    row.container.style.display = '';
   },
-  markTabInactive: function(tab) {
-    tab.className = tab.className.replace(/\s*ui-state-active/g,'')+' ui-widget-header';
+  markTabInactive: function(row) {
+    row.tab.className = row.tab.className.replace(/\s?ui-state-active/g,'').replace(/\s?ui-widget-header/g,'')+' ui-widget-header';
+    row.container.style.display = 'none';
   }
 });

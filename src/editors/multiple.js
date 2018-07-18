@@ -1,4 +1,4 @@
-// Multiple Editor (for when `type` is an array)
+// Multiple Editor (for when `type` is an array, also when `oneOf` is present)
 JSONEditor.defaults.editors.multiple = JSONEditor.AbstractEditor.extend({
   register: function() {
     if(this.editors) {
@@ -24,20 +24,23 @@ JSONEditor.defaults.editors.multiple = JSONEditor.AbstractEditor.extend({
     return Math.max(this.editors[this.type].getNumColumns(),4);
   },
   enable: function() {
-    if(this.editors) {
-      for(var i=0; i<this.editors.length; i++) {
-        if(!this.editors[i]) continue;
-        this.editors[i].enable();
+    if(!this.always_disabled) {
+      if(this.editors) {
+        for(var i=0; i<this.editors.length; i++) {
+          if(!this.editors[i]) continue;
+          this.editors[i].enable();
+        }
       }
+      this.switcher.disabled = false;
+      this._super();
     }
-    this.switcher.disabled = false;
-    this._super();
   },
-  disable: function() {
+  disable: function(always_disabled) {
+    if(always_disabled) this.always_disabled = true;
     if(this.editors) {
       for(var i=0; i<this.editors.length; i++) {
         if(!this.editors[i]) continue;
-        this.editors[i].disable();
+        this.editors[i].disable(always_disabled);
       }
     }
     this.switcher.disabled = true;
@@ -49,12 +52,12 @@ JSONEditor.defaults.editors.multiple = JSONEditor.AbstractEditor.extend({
     if(!this.editors[i]) {
       this.buildChildEditor(i);
     }
+    
+    var current_value = self.getValue();
 
     self.type = i;
 
     self.register();
-
-    var current_value = self.getValue();
 
     $each(self.editors,function(type,editor) {
       if(!editor) return;
@@ -84,7 +87,7 @@ JSONEditor.defaults.editors.multiple = JSONEditor.AbstractEditor.extend({
       schema = self.jsoneditor.expandRefs(schema);
 
       // If we need to merge `required` arrays
-      if(type.required && Array.isArray(type.required) && self.schema.required && Array.isArray(self.schema.required)) {
+      if(type && type.required && Array.isArray(type.required) && self.schema.required && Array.isArray(self.schema.required)) {
         schema.required = self.schema.required.concat(type.required);
       }
     }
@@ -128,10 +131,12 @@ JSONEditor.defaults.editors.multiple = JSONEditor.AbstractEditor.extend({
     if(this.schema.oneOf) {
       this.oneOf = true;
       this.types = this.schema.oneOf;
-      $each(this.types,function(i,oneof) {
-        //self.types[i] = self.jsoneditor.expandSchema(oneof);
-      });
       delete this.schema.oneOf;
+    }
+    else if(this.schema.anyOf) {
+      this.anyOf = true;
+      this.types = this.schema.anyOf;
+      delete this.schema.anyOf;
     }
     else {
       if(!this.schema.type || this.schema.type === "any") {
@@ -231,6 +236,7 @@ JSONEditor.defaults.editors.multiple = JSONEditor.AbstractEditor.extend({
   setValue: function(val,initial) {
     // Determine type by getting the first one that validates
     var self = this;
+    var prev_type = this.type;
     $each(this.validators, function(i,validator) {
       if(!validator.validate(val).length) {
         self.type = i;
@@ -239,12 +245,15 @@ JSONEditor.defaults.editors.multiple = JSONEditor.AbstractEditor.extend({
       }
     });
 
-    this.switchEditor(this.type);
+    var type_changed = this.type != prev_type;
+    if (type_changed) {
+	this.switchEditor(this.type);
+    }
 
     this.editors[this.type].setValue(val,initial);
 
     this.refreshValue();
-    self.onChange();
+    self.onChange(type_changed);
   },
   destroy: function() {
     $each(this.editors, function(type,editor) {
@@ -257,11 +266,12 @@ JSONEditor.defaults.editors.multiple = JSONEditor.AbstractEditor.extend({
   showValidationErrors: function(errors) {
     var self = this;
 
-    // oneOf error paths need to remove the oneOf[i] part before passing to child editors
-    if(this.oneOf) {
+    // oneOf and anyOf error paths need to remove the oneOf[i] part before passing to child editors
+    if(this.oneOf || this.anyOf) {
+      var check_part = this.oneOf? 'oneOf' : 'anyOf';
       $each(this.editors,function(i,editor) {
         if(!editor) return;
-        var check = self.path+'.oneOf['+i+']';
+        var check = self.path+'.'+check_part+'['+i+']';
         var new_errors = [];
         $each(errors, function(j,error) {
           if(error.path.substr(0,check.length)===check) {

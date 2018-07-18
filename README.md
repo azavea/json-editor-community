@@ -1,26 +1,34 @@
 JSON Editor
 ===========
 
-![JSON Schema -> HTML Editor -> JSON](https://raw.github.com/jdorn/json-editor/master/jsoneditor.png)
+[![Build Status](https://travis-ci.org/json-editor/json-editor.svg?branch=master)](https://travis-ci.org/json-editor/json-editor)  
+Fork of the inactive [jdorn/json-editor](https://github.com/jdorn/json-editor) using the updated fork [json-editor/json-editor](https://github.com/json-editor/json-editor).  
+Some pull requests added from the original repo.
+
+![JSON Schema -> HTML Editor -> JSON](./docs/images/jsoneditor.png)
 
 JSON Editor takes a JSON Schema and uses it to generate an HTML form.  
 It has full support for JSON Schema version 3 and 4 and can integrate with several popular CSS frameworks (bootstrap, foundation, and jQueryUI).
 
-Check out an interactive demo (demo.html): http://jeremydorn.com/json-editor/
+Check out an interactive demo (demo.html): https://json-editor.github.io/json-editor/
 
-Download the [production version][min] (22K when gzipped) or the [development version][max].
+Install
+-----------------
 
-[min]: https://raw.github.com/jdorn/json-editor/master/dist/jsoneditor.min.js
-[max]: https://raw.github.com/jdorn/json-editor/master/dist/jsoneditor.js
+Install package
+
+    npm install @json-editor/json-editor
+
+Using a CDN
+
+    <script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor/dist/jsoneditor.min.js"></script>
+
+For local usage download the [production version](https://cdn.jsdelivr.net/npm/@json-editor/json-editor/dist/jsoneditor.min.js) or the [development version](https://cdn.jsdelivr.net/npm/@json-editor/json-editor/dist/jsoneditor.js)
 
 Requirements
 -----------------
 
-JSON Schema has the following dependencies:
-
-* [math.js](http://mathjs.org/) for floating point math
-
-It needs a modern browser (tested in Chrome and Firefox).
+JSON Editor has no dependencies. It only needs a modern browser (tested in Chrome and Firefox).
 
 ### Optional Requirements
 
@@ -30,10 +38,11 @@ The following are not required, but can improve the style and usability of JSON 
 *  A compatible CSS framework for styling (bootstrap 2/3, foundation 3/4/5, or jqueryui)
 *  A compatible icon library (bootstrap 2/3 glyphicons, foundation icons 2/3, jqueryui, or font awesome 3/4)
 *  [SCEditor](http://www.sceditor.com/) for WYSIWYG editing of HTML or BBCode content
-*  [EpicEditor](http://epiceditor.com/) for editing of Markdown content
+*  [SimpleMDE](https://simplemde.com/) for editing of Markdown content
 *  [Ace Editor](http://ace.c9.io/) for editing code
 *  [Select2](http://ivaynberg.github.io/select2/) for nicer Select boxes
-*  [Selectize](http://brianreavis.github.io/selectize.js/) for nicer Select & Array boxes
+*  [Selectize](https://selectize.github.io/selectize.js/) for nicer Select & Array boxes
+*  [math.js](http://mathjs.org/) for more accurate floating point math (multipleOf, divisibleBy, etc.)
 
 Usage
 --------------
@@ -170,6 +179,16 @@ Here are all the available options:
     <td>The CSS theme to use.  See the <strong>CSS Integration</strong> section below for more info.</td>
     <td><code>html</code></td>
   </tr>
+  <tr>
+    <td>display_required_only</td>
+    <td>If <code>true</code>, only required properties will be included by default.</td>
+    <td><code>false</code></td>
+  </tr>
+  <tr>
+    <td>prompt_before_delete</td>
+    <td>If <code>true</code>, displays a dialog box with a confirmation message before node deletion.</td>
+    <td><code>true</code></td>
+  </tr>
   </tbody>
 </table>
 
@@ -305,6 +324,7 @@ The currently supported themes are:
 *  html (the default)
 *  bootstrap2
 *  bootstrap3
+*  bootstrap4
 *  foundation3
 *  foundation4
 *  foundation5
@@ -419,7 +439,9 @@ Simple text link
   "links": [
     {
       "rel": "comments",
-      "href": "/posts/{{self}}/comments/"
+      "href": "/posts/{{self}}/comments/",
+      // Optional - set CSS classes for the link
+      "class": "comment-link open-in-modal primary-text"
     }
   ]
 }
@@ -528,6 +550,7 @@ JSON Editor uses HTML5 input types, so some of these may render as basic text in
 *  datetime-local
 *  email
 *  month
+*  password
 *  number
 *  range
 *  tel
@@ -683,6 +706,7 @@ The `table` format works great when every array element has the same schema and 
 
 The `tabs` format can handle any array, but only shows one array element at a time. It has tabs on the left for switching between items.
 
+The `tabs-top` format place tabs on the top.
 
 Here's an example of the `table` format:
 
@@ -744,7 +768,23 @@ This can make the editor much more compact, but at a cost of not guaranteeing ch
   "format": "grid"
 }
 ```
+The `categories` format groups properties in top-tabbed panels, one for each object or array property plus one that groups all added or other types of properties.  
+Panel tabs titles came from object or array titles and for the grouping panel it defaults to "Basic", unless  `basicCategoryTitle` is defined.
 
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" }
+  },
+  "format": "categories",
+  "basicCategoryTitle": "Main"
+}
+```
+
+Demo page will look like this:
+
+![Categories format](./docs/images/categoriesDemo.png)
 
 Editor Options
 ----------------

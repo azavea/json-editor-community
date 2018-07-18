@@ -35,8 +35,8 @@ JSONEditor.defaults.editors.string = JSONEditor.AbstractEditor.extend({
     if(this.sceditor_instance) {
       this.sceditor_instance.val(sanitized);
     }
-    else if(this.epiceditor) {
-      this.epiceditor.importFile(null,sanitized);
+    else if(this.SimpleMDE) {
+      this.SimpleMDE.value(sanitized);
     }
     else if(this.ace_editor) {
       this.ace_editor.setValue(sanitized);
@@ -68,6 +68,7 @@ JSONEditor.defaults.editors.string = JSONEditor.AbstractEditor.extend({
     var self = this, i;
     if(!this.options.compact) this.header = this.label = this.theme.getFormInputLabel(this.getTitle(),this.isRequired());
     if(this.schema.description) this.description = this.theme.getFormInputDescription(this.schema.description);
+    if(this.options.infoText) this.infoButton = this.theme.getInfoButton(this.options.infoText);
 
     this.format = this.schema.format;
     if(!this.format && this.schema.media && this.schema.media.type) {
@@ -252,7 +253,22 @@ JSONEditor.defaults.editors.string = JSONEditor.AbstractEditor.extend({
 
     if(this.format) this.input.setAttribute('data-schemaformat',this.format);
 
-    this.control = this.theme.getFormControl(this.label, this.input, this.description);
+    this.control = this.theme.getFormControl(this.label, this.input, this.description, this.infoButton);
+
+    // output element to display the range value when it changes or have default.
+    if(this.format === 'range') {
+      var output = document.createElement('output');
+      output.setAttribute('class', 'range-output');
+      this.control.appendChild(output);
+      output.value = this.schema.default;
+      this.input.addEventListener('change', function () {
+        output.value = self.input.value;
+      });
+      this.input.addEventListener('input', function () {
+        output.value = self.input.value;
+      });
+    }
+
     this.container.appendChild(this.control);
 
     // Any special formatting that needs to happen after the input is added to the dom
@@ -277,10 +293,11 @@ JSONEditor.defaults.editors.string = JSONEditor.AbstractEditor.extend({
     if(!this.always_disabled) {
       this.input.disabled = false;
       // TODO: WYSIWYG and Markdown editors
+      this._super();
     }
-    this._super();
   },
-  disable: function() {
+  disable: function(always_disabled) {
+    if(always_disabled) this.always_disabled = true;
     this.input.disabled = true;
     // TODO: WYSIWYG and Markdown editors
     this._super();
@@ -318,25 +335,16 @@ JSONEditor.defaults.editors.string = JSONEditor.AbstractEditor.extend({
           self.onChange(true);
         });
       }
-      // EpicEditor for markdown (if it's loaded)
-      else if (this.input_type === 'markdown' && window.EpicEditor) {
-        this.epiceditor_container = document.createElement('div');
-        this.input.parentNode.insertBefore(this.epiceditor_container,this.input);
-        this.input.style.display = 'none';
-        
-        options = $extend({},JSONEditor.plugins.epiceditor,{
-          container: this.epiceditor_container,
-          clientSideStorage: false
+      // SimpleMDE for markdown (if it's loaded)
+      else if (this.input_type === 'markdown' && window.SimpleMDE) {
+        options = $extend({},JSONEditor.plugins.SimpleMDE,{
+          element: this.input
         });
-        
-        this.epiceditor = new window.EpicEditor(options).load();
-        
-        this.epiceditor.importFile(null,this.getValue());
-      
-        this.epiceditor.on('update',function() {
-          var val = self.epiceditor.exportFile();
-          self.input.value = val;
-          self.value = val;
+
+        this.SimpleMDE = new window.SimpleMDE((options));
+
+        this.SimpleMDE.codemirror.on("change",function() {
+          self.value = self.SimpleMDE.value();
           self.is_dirty = true;
           self.onChange(true);
         });
@@ -358,13 +366,12 @@ JSONEditor.defaults.editors.string = JSONEditor.AbstractEditor.extend({
         this.ace_editor = window.ace.edit(this.ace_container);
         
         this.ace_editor.setValue(this.getValue());
-        
+
         // The theme
         if(JSONEditor.plugins.ace.theme) this.ace_editor.setTheme('ace/theme/'+JSONEditor.plugins.ace.theme);
         // The mode
-        mode = window.ace.require("ace/mode/"+mode);
-        if(mode) this.ace_editor.getSession().setMode(new mode.Mode());
-        
+        this.ace_editor.getSession().setMode('ace/mode/' + this.schema.format);
+
         // Listen for changes
         this.ace_editor.on('change',function() {
           var val = self.ace_editor.getValue();
@@ -388,8 +395,8 @@ JSONEditor.defaults.editors.string = JSONEditor.AbstractEditor.extend({
     if(this.sceditor_instance) {
       this.sceditor_instance.destroy();
     }
-    else if(this.epiceditor) {
-      this.epiceditor.unload();
+    else if(this.SimpleMDE) {
+      this.SimpleMDE.destroy();
     }
     else if(this.ace_editor) {
       this.ace_editor.destroy();

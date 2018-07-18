@@ -15,6 +15,7 @@ JSONEditor.prototype = {
     var self = this;
     
     this.ready = false;
+    this.copyClipboard = null;
 
     var theme_class = JSONEditor.defaults.themes[this.options.theme || JSONEditor.defaults.theme];
     if(!theme_class) throw "Unknown theme " + (this.options.theme || JSONEditor.defaults.theme);
@@ -46,10 +47,11 @@ JSONEditor.prototype = {
       self.validator = new JSONEditor.Validator(self,null,validator_options);
       
       // Create the root editor
-      var editor_class = self.getEditorClass(self.schema);
+      var schema = self.expandRefs(self.schema);
+      var editor_class = self.getEditorClass(schema);
       self.root = self.createEditor(editor_class, {
         jsoneditor: self,
-        schema: self.schema,
+        schema: schema,
         required: true,
         container: self.root_container
       });
@@ -59,7 +61,7 @@ JSONEditor.prototype = {
       self.root.postBuild();
 
       // Starting data
-      if(self.options.startval) self.root.setValue(self.options.startval);
+      if(self.options.hasOwnProperty('startval')) self.root.setValue(self.options.startval);
 
       self.validation_results = self.validator.validate(self.root.getValue());
       self.root.showValidationErrors(self.validation_results);
@@ -152,7 +154,7 @@ JSONEditor.prototype = {
   trigger: function(event) {
     if(this.callbacks && this.callbacks[event] && this.callbacks[event].length) {
       for(var i=0; i<this.callbacks[event].length; i++) {
-        this.callbacks[event][i]();
+        this.callbacks[event][i].apply(this, []);
       }
     }
     
@@ -350,7 +352,7 @@ JSONEditor.prototype = {
       if(!schema.hasOwnProperty(i)) continue;
       if(schema[i] && typeof schema[i] === "object" && Array.isArray(schema[i])) {
         for(var j=0; j<schema[i].length; j++) {
-          if(typeof schema[i][j]==="object") {
+          if(schema[i][j] && typeof schema[i][j]==="object") {
             merge_refs(this._getExternalRefs(schema[i][j]));
           }
         }
@@ -359,25 +361,41 @@ JSONEditor.prototype = {
         merge_refs(this._getExternalRefs(schema[i]));
       }
     }
-    
+
     return refs;
   },
-  _loadExternalRefs: function(schema, callback) {
+  _getFileBase: function() {
+    var fileBase = this.options.ajaxBase;
+    if (typeof fileBase === 'undefined') {
+      fileBase = this._getFileBaseFromFileLocation(document.location.toString());
+    }
+    return fileBase;
+  },
+  _getFileBaseFromFileLocation: function(fileLocationString) {
+    var pathItems = fileLocationString.split("/");
+    pathItems.pop();
+    return pathItems.join("/")+"/";
+  },
+  _loadExternalRefs: function(schema, callback, fileBase) {
+    fileBase = fileBase || this._getFileBase();
     var self = this;
     var refs = this._getExternalRefs(schema);
-    
     var done = 0, waiting = 0, callback_fired = false;
-    
+
     $each(refs,function(url) {
       if(self.refs[url]) return;
       if(!self.options.ajax) throw "Must set ajax option to true to load external ref "+url;
       self.refs[url] = 'loading';
       waiting++;
 
-      var r = new XMLHttpRequest(); 
-      r.open("GET", url, true);
+      var fetchUrl=url;
+      if( fileBase!=url.substr(0,fileBase.length) && "http"!=url.substr(0,4) && "/"!=url.substr(0,1)) fetchUrl=fileBase+url;
+
+      var r = new XMLHttpRequest();
+      r.open("GET", fetchUrl, true);
+      if(self.options.ajaxCredentials) r.withCredentials=self.options.ajaxCredentials;
       r.onreadystatechange = function () {
-        if (r.readyState != 4) return; 
+        if (r.readyState != 4) return;
         // Request succeeded
         if(r.status === 200) {
           var response;
@@ -386,9 +404,9 @@ JSONEditor.prototype = {
           }
           catch(e) {
             window.console.log(e);
-            throw "Failed to parse external ref "+url;
+            throw "Failed to parse external ref "+fetchUrl;
           }
-          if(!response || typeof response !== "object") throw "External ref does not contain a valid schema - "+url;
+          if(!response || typeof response !== "object") throw "External ref does not contain a valid schema - "+fetchUrl;
           
           self.refs[url] = response;
           self._loadExternalRefs(response,function() {
@@ -397,7 +415,7 @@ JSONEditor.prototype = {
               callback_fired = true;
               callback();
             }
-          });
+          }, self._getFileBaseFromFileLocation(fetchUrl));
         }
         // Request failed
         else {
@@ -522,10 +540,10 @@ JSONEditor.prototype = {
     $each(obj1, function(prop,val) {
       // If this key is also defined in obj2, merge them
       if(typeof obj2[prop] !== "undefined") {
-        // Required arrays should be unioned together
-        if(prop === 'required' && typeof val === "object" && Array.isArray(val)) {
+        // Required and defaultProperties arrays should be unioned together
+        if((prop === 'required'||prop === 'defaultProperties') && typeof val === "object" && Array.isArray(val)) {
           // Union arrays and unique
-          extended.required = val.concat(obj2[prop]).reduce(function(p, c) {
+          extended[prop] = val.concat(obj2[prop]).reduce(function(p, c) {
             if (p.indexOf(c) < 0) p.push(c);
             return p;
           }, []);
@@ -536,14 +554,24 @@ JSONEditor.prototype = {
           if(typeof val === "string") val = [val];
           if(typeof obj2.type === "string") obj2.type = [obj2.type];
 
-
-          extended.type = val.filter(function(n) {
-            return obj2.type.indexOf(n) !== -1;
-          });
+          // If type is only defined in the first schema, keep it
+          if(!obj2.type || !obj2.type.length) {
+            extended.type = val;
+          }
+          // If type is defined in both schemas, do an intersect
+          else {
+            extended.type = val.filter(function(n) {
+              return obj2.type.indexOf(n) !== -1;
+            });
+          }
 
           // If there's only 1 type and it's a primitive, use a string instead of array
           if(extended.type.length === 1 && typeof extended.type[0] === "string") {
             extended.type = extended.type[0];
+          }
+          // Remove the type property if it's empty
+          else if(extended.type.length === 0) {
+            delete extended.type;
           }
         }
         // All other arrays should be intersected (enum, etc.)
@@ -574,6 +602,12 @@ JSONEditor.prototype = {
     });
 
     return extended;
+  },
+  setCopyClipboardContents: function(value) {
+    this.copyClipboard = value;
+  },
+  getCopyClipboardContents: function() {
+    return this.copyClipboard;
   }
 };
 

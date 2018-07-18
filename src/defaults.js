@@ -7,6 +7,8 @@ JSONEditor.defaults.template = 'default';
 // Default options when initializing JSON Editor
 JSONEditor.defaults.options = {};
 
+JSONEditor.defaults.options.prompt_before_delete = true;
+
 // String translate function
 JSONEditor.defaults.translate = function(key, variables) {
   var lang = JSONEditor.defaults.languages[JSONEditor.defaults.language];
@@ -209,7 +211,7 @@ JSONEditor.plugins = {
   ace: {
     theme: ''
   },
-  epiceditor: {
+  SimpleMDE: {
 
   },
   sceditor: {
@@ -223,10 +225,9 @@ JSONEditor.plugins = {
 };
 
 // Default per-editor options
-for(var i in JSONEditor.defaults.editors) {
-  if(!JSONEditor.defaults.editors.hasOwnProperty(i)) continue;
-  JSONEditor.defaults.editors[i].options = JSONEditor.defaults.editors.options || {};
-}
+$each(JSONEditor.defaults.editors, function(i,editor) {
+  JSONEditor.defaults.editors[i].options = editor.options || {};
+});
 
 // Set the default resolvers
 // Use "multiple" as a fall back for everything
@@ -243,7 +244,11 @@ JSONEditor.defaults.resolvers.unshift(function(schema) {
   // If the schema is a simple type
   if(typeof schema.type === "string") return schema.type;
 });
-// Boolean editors
+// Use a specialized editor for ratings
+JSONEditor.defaults.resolvers.unshift(function(schema) {
+  if(schema.type === "integer" && schema.format === "rating") return "rating";
+});
+// Use the select editor for all boolean values
 JSONEditor.defaults.resolvers.unshift(function(schema) {
   if(schema.type === 'boolean') {
     // If explicitly set to 'checkbox', use that
@@ -275,7 +280,7 @@ JSONEditor.defaults.resolvers.unshift(function(schema) {
 // Use the table editor for arrays with the format set to `table`
 JSONEditor.defaults.resolvers.unshift(function(schema) {
   // Type `array` with format set to `table`
-  if(schema.type == "array" && schema.format == "table") {
+  if(schema.type === "array" && schema.format === "table") {
     return "table";
   }
 });
@@ -309,6 +314,6 @@ JSONEditor.defaults.resolvers.unshift(function(schema) {
 });
 // Use the multiple editor for schemas with `oneOf` set
 JSONEditor.defaults.resolvers.unshift(function(schema) {
-  // If this schema uses `oneOf`
-  if(schema.oneOf) return "multiple";
+  // If this schema uses `oneOf` or `anyOf`
+  if(schema.oneOf || schema.anyOf) return "multiple";
 });

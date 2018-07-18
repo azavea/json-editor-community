@@ -14,6 +14,11 @@ JSONEditor.defaults.themes.bootstrap3 = JSONEditor.AbstractTheme.extend({
     if(this.closest(input,'.compact')) {
       input.controlgroup.style.marginBottom = 0;
     }
+    if (this.queuedInputErrorText) {
+        var text = this.queuedInputErrorText;
+        delete this.queuedInputErrorText;
+        this.addInputError(input,text);
+    }
 
     // TODO: use bootstrap slider
   },
@@ -33,7 +38,7 @@ JSONEditor.defaults.themes.bootstrap3 = JSONEditor.AbstractTheme.extend({
     }
     return el;
   },
-  getFormControl: function(label, input, description) {
+  getFormControl: function(label, input, description, infoText) {
     var group = document.createElement('div');
 
     if(label && input.type === 'checkbox') {
@@ -41,16 +46,19 @@ JSONEditor.defaults.themes.bootstrap3 = JSONEditor.AbstractTheme.extend({
       label.appendChild(input);
       label.style.fontSize = '14px';
       group.style.marginTop = '0';
+      if(infoText) group.appendChild(infoText);
       group.appendChild(label);
       input.style.position = 'relative';
       input.style.cssFloat = 'left';
-    } 
+    }
     else {
       group.className += ' form-group';
       if(label) {
         label.className += ' control-label';
         group.appendChild(label);
       }
+
+      if(infoText) group.appendChild(infoText);
       group.appendChild(input);
     }
 
@@ -63,6 +71,36 @@ JSONEditor.defaults.themes.bootstrap3 = JSONEditor.AbstractTheme.extend({
     el.className = 'well well-sm';
     el.style.paddingBottom = 0;
     return el;
+  },
+  getInfoButton: function(text) {
+    var icon = document.createElement('span');
+    icon.className = "glyphicon glyphicon-info-sign pull-right";
+    icon.style.padding = ".25rem";
+    icon.style.position = "relative";
+    icon.style.display = "inline-block";
+
+    var tooltip = document.createElement('span');
+    tooltip.style["font-family"] = "sans-serif";
+    tooltip.style.visibility = "hidden";
+    tooltip.style["background-color"] = "rgba(50, 50, 50, .75)";
+    tooltip.style.margin = "0 .25rem";
+    tooltip.style.color = "#FAFAFA";
+    tooltip.style.padding = ".5rem 1rem";
+    tooltip.style["border-radius"] = ".25rem";
+    tooltip.style.width = "25rem";
+    tooltip.style.transform = "translateX(-27rem) translateY(-.5rem)";
+    tooltip.style.position = "absolute";
+    tooltip.innerText = text;
+    icon.onmouseover = function() {
+      tooltip.style.visibility = "visible";
+    };
+    icon.onmouseleave = function() {
+      tooltip.style.visibility = "hidden";
+    };
+
+    icon.appendChild(tooltip);
+
+    return icon;
   },
   getFormInputDescription: function(text) {
     var el = document.createElement('p');
@@ -94,7 +132,11 @@ JSONEditor.defaults.themes.bootstrap3 = JSONEditor.AbstractTheme.extend({
   },
 
   addInputError: function(input,text) {
-    if(!input.controlgroup) return;
+    if(!input.controlgroup) {
+        this.queuedInputErrorText = text;
+        return;
+    }
+    input.controlgroup.className = input.controlgroup.className.replace(/\s?has-error/g,'');
     input.controlgroup.className += ' has-error';
     if(!input.errmsg) {
       input.errmsg = document.createElement('p');
@@ -108,28 +150,48 @@ JSONEditor.defaults.themes.bootstrap3 = JSONEditor.AbstractTheme.extend({
     input.errmsg.textContent = text;
   },
   removeInputError: function(input) {
+    if(!input.controlgroup) {
+        delete this.queuedInputErrorText;
+    }
     if(!input.errmsg) return;
     input.errmsg.style.display = 'none';
     input.controlgroup.className = input.controlgroup.className.replace(/\s?has-error/g,'');
   },
-  getTabHolder: function() {
+  getTabHolder: function(propertyName) {
+    var pName = (typeof propertyName === 'undefined')? "" : propertyName;
     var el = document.createElement('div');
-    el.innerHTML = "<div class='tabs list-group col-md-2'></div><div class='col-md-10'></div>";
-    el.className = 'rows';
+    el.innerHTML = "<div class='list-group pull-left' id='" + pName + "'></div><div class='col-sm-10 pull-left' id='" + pName + "'></div>";
     return el;
   },
-  getTab: function(text) {
+  getTopTabHolder: function(propertyName) {
+    var pName = (typeof propertyName === 'undefined')? "" : propertyName;
+    var el = document.createElement('div');
+    el.innerHTML = "<ul class='nav nav-tabs' style='padding-left: 10px; margin-left: 10px;' id='" + pName + "'></ul><div class='tab-content' style='overflow:visible;' id='" + pName + "'></div>";
+    return el;
+  },
+  getTab: function(text, tabId) {
     var el = document.createElement('a');
     el.className = 'list-group-item';
-    el.setAttribute('href','#');
+    el.setAttribute('href','#'+tabId);
     el.appendChild(text);
     return el;
   },
-  markTabActive: function(tab) {
-    tab.className += ' active';
+  getTopTab: function(text, tabId) {
+    var el = document.createElement('li');
+    var a = document.createElement('a');
+    a.setAttribute('href','#'+tabId);
+    a.appendChild(text);
+    el.appendChild(a);
+    return el;
   },
-  markTabInactive: function(tab) {
-    tab.className = tab.className.replace(/\s?active/g,'');
+  markTabActive: function(row) {
+    row.tab.className = row.tab.className.replace(/\s?active/g,'');
+    row.tab.className += ' active';
+    row.container.style.display = '';
+  },
+  markTabInactive: function(row) {
+    row.tab.className = row.tab.className.replace(/\s?active/g,'');
+    row.container.style.display = 'none';
   },
   getProgressBar: function() {
     var min = 0, max = 100, start = 0;
