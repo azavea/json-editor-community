@@ -453,7 +453,7 @@ JSONEditor.AbstractEditor = Class.extend({
       }
       return this.schema["enum"][0];
     }
-
+    
     var type = this.schema.type || this.schema.oneOf;
     if(type && Array.isArray(type)) type = type[0];
     if(type && typeof type === "object") type = type.type;

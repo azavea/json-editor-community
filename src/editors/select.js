@@ -189,13 +189,13 @@ JSONEditor.defaults.editors.select = JSONEditor.AbstractEditor.extend({
 
     this.control = this.theme.getFormControl(this.label, this.input, this.description, this.infoButton);
     this.container.appendChild(this.control);
+
     this.value = this.enum_values[0];
   },
   onInputChange: function() {
     var val = this.typecast(this.input.value);
 
     var new_val;
-
     // Invalid option, use first option instead
     if(this.enum_values.indexOf(val) === -1) {
       new_val = this.enum_values[0];
