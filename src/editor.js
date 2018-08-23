@@ -447,6 +447,10 @@ JSONEditor.AbstractEditor = Class.extend({
     }
 
     if (typeof this.schema["enum"] !== 'undefined') {
+      // default to empty option for selects and dynamic selects that aren't required
+      if (!this.isRequired() && (this.schema['enum'] || this.schema.enumSource)) {
+        return undefined;
+      }
       return this.schema["enum"][0];
     }
     
@@ -467,7 +471,17 @@ JSONEditor.AbstractEditor = Class.extend({
     return null;
   },
   getTitle: function() {
-    return this.schema.title || this.key;
+      //Title collapsable form sections
+      if (this.hasOwnProperty("hide_add_button")) {
+        var hasNoTitle = !this.schema.title;
+        var hasParentDefinitions = (this.parent !== undefined) && (this.parent.schema.definitions !== undefined);
+        if (hasNoTitle && hasParentDefinitions) {
+          return this.parent.schema.definitions[this.key].plural_title || this.parent.schema.definitions[this.key].title || this.key;
+        }
+        return this.schema.plural_title || this.schema.title || this.key;
+      }
+      //Title all else
+      return this.schema.title || this.key;
   },
   enable: function() {
     this.disabled = false;

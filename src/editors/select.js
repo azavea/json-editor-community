@@ -5,7 +5,12 @@ JSONEditor.defaults.editors.select = JSONEditor.AbstractEditor.extend({
     // Sanitize value before setting it
     var sanitized = value;
     if(this.enum_values.indexOf(sanitized) < 0) {
-      sanitized = this.enum_values[0];
+      // DISABLE DYNAMIC SELECTOR INPUT CHECK
+      // Or else it will attempt to check for related values before they exist
+      ////////////////////////////////////////////////////////////////////////////
+      if (!this.schema.enumSource) {
+        sanitized = this.enum_values[0];
+      }
     }
 
     if(this.value === sanitized) {
@@ -163,7 +168,7 @@ JSONEditor.defaults.editors.select = JSONEditor.AbstractEditor.extend({
   },
   build: function() {
     var self = this;
-    if(!this.options.compact) this.header = this.label = this.theme.getFormInputLabel(this.getTitle());
+    if(!this.options.compact) this.header = this.label = this.theme.getFormInputLabel(this.getTitle(),this.isRequired());
     if(this.schema.description) this.description = this.theme.getFormInputDescription(this.schema.description);
     if(this.options.infoText) this.infoButton = this.theme.getInfoButton(this.options.infoText);
     if(this.options.compact) this.container.className += ' compact';
@@ -321,6 +326,12 @@ JSONEditor.defaults.editors.select = JSONEditor.AbstractEditor.extend({
 
       var prev_value = this.value;
 
+      // Add an empty option for non-required dynamic select boxes
+      if(!this.isRequired()) {
+        select_options.unshift(undefined);
+        select_titles.unshift(' ');
+      }
+
       this.theme.setSelectOptions(this.input, select_options, select_titles);
       this.enum_options = select_options;
       this.enum_display = select_titles;
@@ -335,7 +346,11 @@ JSONEditor.defaults.editors.select = JSONEditor.AbstractEditor.extend({
         this.input.value = prev_value;
         this.value = prev_value;
       }
+      // DISABLE DYNAMIC SELECTOR INPUT CHECK
+      // Or else it will attempt to check for related values before they exist
+      ////////////////////////////////////////////////////////////////////////////
       // Otherwise, set the value to the first select option
+      /*
       else {
         this.input.value = select_options[0];
         this.value = this.typecast(select_options[0] || "");  
@@ -343,6 +358,7 @@ JSONEditor.defaults.editors.select = JSONEditor.AbstractEditor.extend({
         else this.jsoneditor.onChange();
         this.jsoneditor.notifyWatchers(this.path);
       }
+      */
 
       this.setupSelect2();
     }
